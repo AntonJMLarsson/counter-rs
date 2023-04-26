@@ -47,12 +47,12 @@
 //! Extend a `Counter` with another `Counter`:
 //! ```rust
 //! # use counter::Counter;
-//! # use std::collections::HashMap;
+//! # use fnv::FnvHashMap;
 //! let mut counter = "abbccc".chars().collect::<Counter<_>>();
 //! let another = "bccddd".chars().collect::<Counter<_>>();
 //! counter.extend(&another);
 //! let expect = [('a', 1), ('b', 3), ('c', 5), ('d', 3)].iter()
-//!     .cloned().collect::<HashMap<_, _>>();
+//!     .cloned().collect::<FnvHashMap<_, _>>();
 //! assert_eq!(counter.into_map(), expect);
 //! ```
 //! ## Get items with keys
@@ -181,13 +181,13 @@
 //! [`&=`]: https://doc.rust-lang.org/std/ops/trait.BitAndAssign.html
 //! [`|=`]: https://doc.rust-lang.org/std/ops/trait.BitOrAssign.html
 //!
-//! ## Treat it like a `HashMap`
+//! ## Treat it like a `FnvHashMap`
 //!
-//! `Counter<T, N>` implements [`Deref`]`<Target=HashMap<T, N>>` and
-//! [`DerefMut`]`<Target=HashMap<T, N>>`, which means that you can perform any operations
-//! on it which are valid for a [`HashMap`].
+//! `Counter<T, N>` implements [`Deref`]`<Target=FnvHashMap<T, N>>` and
+//! [`DerefMut`]`<Target=FnvHashMap<T, N>>`, which means that you can perform any operations
+//! on it which are valid for a [`FnvHashMap`].
 //!
-//! [`HashMap`]: https://doc.rust-lang.org/std/collections/struct.HashMap.html
+//! [`FnvHashMap`]: https://doc.rust-lang.org/std/collections/struct.FnvHashMap.html
 //! [`Deref`]: https://doc.rust-lang.org/stable/std/ops/trait.Deref.html
 //! [`DerefMut`]: https://doc.rust-lang.org/stable/std/ops/trait.DerefMut.html
 //!
@@ -268,24 +268,25 @@
 //!
 //! ```rust
 //! # use counter::Counter;
-//! # use std::collections::HashMap;
+//! # use fnv::FnvHashMap;
 //! let counter: Counter<_, i8> = "abbccc".chars().collect();
-//! let expected: HashMap<char, i8> = [('a', 1), ('b', 2), ('c', 3)].iter().cloned().collect();
+//! let expected: FnvHashMap<char, i8> = [('a', 1), ('b', 2), ('c', 3)].iter().cloned().collect();
 //! assert!(counter.into_map() == expected);
 //! ```
 
 use num_traits::{One, Zero};
 
 use std::borrow::Borrow;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::{BinaryHeap};
 use std::hash::Hash;
 use std::iter;
 use std::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, Deref, DerefMut, Index, IndexMut,
     Sub, SubAssign,
 };
+use fnv::FnvHashMap;
 
-type CounterMap<T, N> = HashMap<T, N>;
+type CounterMap<T, N> = FnvHashMap<T, N>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Counter<T: Hash + Eq, N = usize> {
@@ -298,10 +299,10 @@ impl<T, N> Counter<T, N>
 where
     T: Hash + Eq,
 {
-    /// Consumes this counter and returns a [`HashMap`] mapping the items to the counts.
+    /// Consumes this counter and returns a [`FnvHashMap`] mapping the items to the counts.
     ///
-    /// [`HashMap`]: https://doc.rust-lang.org/stable/std/collections/struct.HashMap.html
-    pub fn into_map(self) -> HashMap<T, N> {
+    /// [`FnvHashMap`]: https://doc.rust-lang.org/stable/std/collections/struct.FnvHashMap.html
+    pub fn into_map(self) -> FnvHashMap<T, N> {
         self.map
     }
 
@@ -334,9 +335,9 @@ where
     N: Zero,
 {
     /// Create a new, empty `Counter`
-    pub fn new() -> Counter<T, N> {
+    pub fn new() -> Counter<T, N> { 
         Counter {
-            map: HashMap::new(),
+            map: FnvHashMap::default(),
             zero: N::zero(),
         }
     }
@@ -380,10 +381,10 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let mut counter = "abbccc".chars().collect::<Counter<_>>();
     /// counter.subtract("abba".chars());
-    /// let expect = [('c', 3)].iter().cloned().collect::<HashMap<_, _>>();
+    /// let expect = [('c', 3)].iter().cloned().collect::<FnvHashMap<_, _>>();
     /// assert_eq!(counter.into_map(), expect);
     /// ```
     pub fn subtract<I>(&mut self, iterable: I)
@@ -590,13 +591,13 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let mut c = "aaab".chars().collect::<Counter<_>>();
     /// let d = "abb".chars().collect::<Counter<_>>();
     ///
     /// c += d;
     ///
-    /// let expect = [('a', 4), ('b', 3)].iter().cloned().collect::<HashMap<_, _>>();
+    /// let expect = [('a', 4), ('b', 3)].iter().cloned().collect::<FnvHashMap<_, _>>();
     /// assert_eq!(c.into_map(), expect);
     /// ```
     fn add_assign(&mut self, rhs: Self) {
@@ -620,13 +621,13 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let c = "aaab".chars().collect::<Counter<_>>();
     /// let d = "abb".chars().collect::<Counter<_>>();
     ///
     /// let e = c + d;
     ///
-    /// let expect = [('a', 4), ('b', 3)].iter().cloned().collect::<HashMap<_, _>>();
+    /// let expect = [('a', 4), ('b', 3)].iter().cloned().collect::<FnvHashMap<_, _>>();
     /// assert_eq!(e.into_map(), expect);
     /// ```
     fn add(mut self, rhs: Counter<T, N>) -> Self::Output {
@@ -650,13 +651,13 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let mut c = "aaab".chars().collect::<Counter<_>>();
     /// let d = "abb".chars().collect::<Counter<_>>();
     ///
     /// c -= d;
     ///
-    /// let expect = [('a', 2)].iter().cloned().collect::<HashMap<_, _>>();
+    /// let expect = [('a', 2)].iter().cloned().collect::<FnvHashMap<_, _>>();
     /// assert_eq!(c.into_map(), expect);
     /// ```
     fn sub_assign(&mut self, rhs: Self) {
@@ -696,13 +697,13 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let c = "aaab".chars().collect::<Counter<_>>();
     /// let d = "abb".chars().collect::<Counter<_>>();
     ///
     /// let e = c - d;
     ///
-    /// let expect = [('a', 2)].iter().cloned().collect::<HashMap<_, _>>();
+    /// let expect = [('a', 2)].iter().cloned().collect::<FnvHashMap<_, _>>();
     /// assert_eq!(e.into_map(), expect);
     /// ```
     fn sub(mut self, rhs: Counter<T, N>) -> Self::Output {
@@ -724,7 +725,7 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let c = "aaabbc".chars().collect::<Counter<_>>();
     /// let mut d = "abb".chars().collect::<Counter<_>>();
     ///
@@ -749,7 +750,7 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let mut c = "abb".chars().collect::<Counter<_>>();
     /// let mut d = "aaabbc".chars().collect::<Counter<_>>();
     ///
@@ -780,13 +781,13 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let c = "aaab".chars().collect::<Counter<_>>();
     /// let d = "abb".chars().collect::<Counter<_>>();
     ///
     /// let e = c & d;
     ///
-    /// let expect = [('a', 1), ('b', 1)].iter().cloned().collect::<HashMap<_, _>>();
+    /// let expect = [('a', 1), ('b', 1)].iter().cloned().collect::<FnvHashMap<_, _>>();
     /// assert_eq!(e.into_map(), expect);
     /// ```
     fn bitand(self, mut rhs: Counter<T, N>) -> Self::Output {
@@ -814,13 +815,13 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let mut c = "aaab".chars().collect::<Counter<_>>();
     /// let d = "abb".chars().collect::<Counter<_>>();
     ///
     /// c &= d;
     ///
-    /// let expect = [('a', 1), ('b', 1)].iter().cloned().collect::<HashMap<_, _>>();
+    /// let expect = [('a', 1), ('b', 1)].iter().cloned().collect::<FnvHashMap<_, _>>();
     /// assert_eq!(c.into_map(), expect);
     /// ```
     fn bitand_assign(&mut self, mut rhs: Counter<T, N>) {
@@ -845,13 +846,13 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let c = "aaab".chars().collect::<Counter<_>>();
     /// let d = "abb".chars().collect::<Counter<_>>();
     ///
     /// let e = c | d;
     ///
-    /// let expect = [('a', 3), ('b', 2)].iter().cloned().collect::<HashMap<_, _>>();
+    /// let expect = [('a', 3), ('b', 2)].iter().cloned().collect::<FnvHashMap<_, _>>();
     /// assert_eq!(e.into_map(), expect);
     /// ```
     fn bitor(mut self, rhs: Counter<T, N>) -> Self::Output {
@@ -892,13 +893,13 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let mut c = "aaab".chars().collect::<Counter<_>>();
     /// let d = "abb".chars().collect::<Counter<_>>();
     ///
     /// c |= d;
     ///
-    /// let expect = [('a', 3), ('b', 2)].iter().cloned().collect::<HashMap<_, _>>();
+    /// let expect = [('a', 3), ('b', 2)].iter().cloned().collect::<FnvHashMap<_, _>>();
     /// assert_eq!(c.into_map(), expect);
     /// ```
     fn bitor_assign(&mut self, mut rhs: Counter<T, N>) {
@@ -1028,17 +1029,17 @@ where
     /// ```
     ///
     /// Note that the [`zero`] is a struct field but not one of the values of the inner
-    /// [`HashMap`].  This method does not modify any existing value.
+    /// [`FnvHashMap`].  This method does not modify any existing value.
     ///
     /// [`zero`]:
     /// https://docs.rs/num-traits/latest/num_traits/identities/trait.Zero.html#tymethod.zero
-    /// [`HashMap`]: https://doc.rust-lang.org/stable/std/collections/struct.HashMap.html
+    /// [`FnvHashMap`]: https://doc.rust-lang.org/stable/std/collections/struct.FnvHashMap.html
     ///
     /// ```
     /// # use counter::Counter;
     /// let counter = Counter::<_>::init("".chars());
     /// assert_eq!(counter[&'a'], 0);
-    /// assert_eq!(counter.get(&'a'), None); // as `Deref<Target = HashMap<_, _>>`
+    /// assert_eq!(counter.get(&'a'), None); // as `Deref<Target = FnvHashMap<_, _>>`
     /// ```
     fn index(&self, key: &'_ Q) -> &N {
         self.map.get(key).unwrap_or(&self.zero)
@@ -1069,16 +1070,16 @@ where
     /// ```
     ///
     /// Unlike `Index::index`, the returned mutable reference to the [`zero`] is actually one of the
-    /// values of the inner [`HashMap`].
+    /// values of the inner [`FnvHashMap`].
     ///
     /// [`zero`]:
     /// https://docs.rs/num-traits/latest/num_traits/identities/trait.Zero.html#tymethod.zero
-    /// [`HashMap`]: https://doc.rust-lang.org/stable/std/collections/struct.HashMap.html
+    /// [`FnvHashMap`]: https://doc.rust-lang.org/stable/std/collections/struct.FnvHashMap.html
     ///
     /// ```
     /// # use counter::Counter;
     /// let mut counter = Counter::<_>::init("".chars());
-    /// assert_eq!(counter.get(&'a'), None); // as `Deref<Target = HashMap<_, _>>`
+    /// assert_eq!(counter.get(&'a'), None); // as `Deref<Target = FnvHashMap<_, _>>`
     /// let _ = &mut counter[&'a'];
     /// assert_eq!(counter.get(&'a'), Some(&0));
     /// ```
@@ -1097,11 +1098,11 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let mut counter = Counter::init("abbccc".chars());
     ///
     /// counter += "aeeeee".chars();
-    /// let expected: HashMap<char, usize> = [('a', 2), ('b', 2), ('c', 3), ('e', 5)]
+    /// let expected: FnvHashMap<char, usize> = [('a', 2), ('b', 2), ('c', 3), ('e', 5)]
     ///     .iter().cloned().collect();
     /// assert_eq!(counter.into_map(), expected);
     /// ```
@@ -1122,11 +1123,11 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let counter = Counter::init("abbccc".chars());
     ///
     /// let new_counter = counter + "aeeeee".chars();
-    /// let expected: HashMap<char, usize> = [('a', 2), ('b', 2), ('c', 3), ('e', 5)]
+    /// let expected: FnvHashMap<char, usize> = [('a', 2), ('b', 2), ('c', 3), ('e', 5)]
     ///     .iter().cloned().collect();
     /// assert_eq!(new_counter.into_map(), expected);
     /// ```
@@ -1150,11 +1151,11 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let mut c = "aaab".chars().collect::<Counter<_>>();
     /// c -= "abb".chars();
     ///
-    /// let expect = [('a', 2)].iter().cloned().collect::<HashMap<_, _>>();
+    /// let expect = [('a', 2)].iter().cloned().collect::<FnvHashMap<_, _>>();
     /// assert_eq!(c.into_map(), expect);
     /// ```
     fn sub_assign(&mut self, rhs: I) {
@@ -1174,11 +1175,11 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let c = "aaab".chars().collect::<Counter<_>>();
     /// let e = c - "abb".chars();
     ///
-    /// let expect = [('a', 2)].iter().cloned().collect::<HashMap<_, _>>();
+    /// let expect = [('a', 2)].iter().cloned().collect::<FnvHashMap<_, _>>();
     /// assert_eq!(e.into_map(), expect);
     /// ```
     fn sub(mut self, rhs: I) -> Self::Output {
@@ -1200,9 +1201,9 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let counter = "abbccc".chars().collect::<Counter<_>>();
-    /// let expect = [('a', 1), ('b', 2), ('c', 3)].iter().cloned().collect::<HashMap<_, _>>();
+    /// let expect = [('a', 1), ('b', 2), ('c', 3)].iter().cloned().collect::<FnvHashMap<_, _>>();
     /// assert_eq!(counter.into_map(), expect);
     /// ```
     ///
@@ -1221,11 +1222,11 @@ where
     /// The counts of duplicate items are summed.
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let counter = [('a', 1), ('b', 2), ('c', 3), ('a', 4)].iter()
     ///     .cloned().collect::<Counter<_>>();
     /// let expect = [('a', 5), ('b', 2), ('c', 3)].iter()
-    ///     .cloned().collect::<HashMap<_, _>>();
+    ///     .cloned().collect::<FnvHashMap<_, _>>();
     /// assert_eq!(counter.into_map(), expect);
     /// ```
     fn from_iter<I: IntoIterator<Item = (T, N)>>(iter: I) -> Self {
@@ -1247,10 +1248,10 @@ where
     ///
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let mut counter = "abbccc".chars().collect::<Counter<_>>();
     /// counter.extend("bccddd".chars());
-    /// let expect = [('a', 1), ('b', 3), ('c', 5), ('d', 3)].iter().cloned().collect::<HashMap<_, _>>();
+    /// let expect = [('a', 1), ('b', 3), ('c', 5), ('d', 3)].iter().cloned().collect::<FnvHashMap<_, _>>();
     /// assert_eq!(counter.into_map(), expect);
     /// ```
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
@@ -1268,11 +1269,11 @@ where
     /// The counts of duplicate items are summed.
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let mut counter = "abbccc".chars().collect::<Counter<_>>();
     /// counter.extend([('a', 1), ('b', 2), ('c', 3), ('a', 4)].iter().cloned());
     /// let expect = [('a', 6), ('b', 4), ('c', 6)].iter()
-    ///     .cloned().collect::<HashMap<_, _>>();
+    ///     .cloned().collect::<FnvHashMap<_, _>>();
     /// assert_eq!(counter.into_map(), expect);
     /// ```
     fn extend<I: IntoIterator<Item = (T, N)>>(&mut self, iter: I) {
@@ -1293,12 +1294,12 @@ where
     /// You can extend a `Counter` with another `Counter`:
     /// ```rust
     /// # use counter::Counter;
-    /// # use std::collections::HashMap;
+    /// # use fnv::FnvHashMap;
     /// let mut counter = "abbccc".chars().collect::<Counter<_>>();
     /// let another = "bccddd".chars().collect::<Counter<_>>();
     /// counter.extend(&another);
     /// let expect = [('a', 1), ('b', 3), ('c', 5), ('d', 3)].iter()
-    ///     .cloned().collect::<HashMap<_, _>>();
+    ///     .cloned().collect::<FnvHashMap<_, _>>();
     /// assert_eq!(counter.into_map(), expect);
     /// ```
     fn extend<I: IntoIterator<Item = (&'a T, &'a N)>>(&mut self, iter: I) {
@@ -1312,9 +1313,25 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use maplit::hashmap;
     use rand::Rng;
-    use std::collections::HashMap;
+    use fnv::FnvHashMap;
+
+    macro_rules! hashmap {
+        (@single $($x:tt)*) => (());
+        (@count $($rest:expr),*) => (<[()]>::len(&[$(hashmap!(@single $rest)),*]));
+    
+        ($($key:expr => $value:expr,)+) => { hashmap!($($key => $value),+) };
+        ($($key:expr => $value:expr),*) => {
+            {
+                let _cap = hashmap!(@count $($key),*);
+                let mut _map = ::fnv::FnvHashMap::with_capacity_and_hasher(_cap, Default::default());
+                $(
+                    let _ = _map.insert($key, $value);
+                )*
+                _map
+            }
+        };
+    }
 
     #[test]
     fn test_creation() {
@@ -1323,7 +1340,7 @@ mod tests {
         let initializer = &[1];
         let counter = Counter::init(initializer);
 
-        let mut expected = HashMap::new();
+        let mut expected = FnvHashMap::default();
         static ONE: usize = 1;
         expected.insert(&ONE, 1);
         assert!(counter.map == expected);
@@ -1594,7 +1611,7 @@ mod tests {
     fn test_from_iter_tuple() {
         let items = [('a', 1), ('b', 2), ('c', 3)];
         let counter = items.iter().cloned().collect::<Counter<_>>();
-        let expected: HashMap<char, usize> = items.iter().cloned().collect();
+        let expected: FnvHashMap<char, usize> = items.iter().cloned().collect();
         assert_eq!(counter.map, expected);
     }
 
@@ -1607,7 +1624,7 @@ mod tests {
             .take(items.len() * 2)
             .cloned()
             .collect::<Counter<_>>();
-        let expected: HashMap<char, usize> = items.iter().map(|(c, n)| (*c, n * 2)).collect();
+        let expected: FnvHashMap<char, usize> = items.iter().map(|(c, n)| (*c, n * 2)).collect();
         assert_eq!(counter.map, expected);
     }
 
@@ -1643,7 +1660,7 @@ mod tests {
         let mut counter = "ccc".chars().collect::<Counter<_>>();
         let items = [('a', 1), ('b', 2), ('c', 3)];
         counter.extend(items.iter().cycle().take(items.len() * 2 - 1).cloned());
-        let expected: HashMap<char, usize> = items.iter().map(|(c, n)| (*c, n * 2)).collect();
+        let expected: FnvHashMap<char, usize> = items.iter().map(|(c, n)| (*c, n * 2)).collect();
         assert_eq!(counter.map, expected);
     }
 

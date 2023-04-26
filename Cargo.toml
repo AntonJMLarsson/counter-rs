@@ -12,6 +12,7 @@ edition = "2018"
 
 [dependencies]
 num-traits = "0.2"
+fnv = "1.0.7"
 
 [dev-dependencies]
 maplit = "1.0"
