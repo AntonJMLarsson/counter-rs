@@ -276,6 +276,8 @@
 
 use num_traits::{One, Zero};
 
+use num_traits::ops::saturating::SaturatingAdd;
+
 use std::borrow::Borrow;
 use std::collections::{BinaryHeap};
 use std::hash::Hash;
@@ -293,6 +295,22 @@ pub struct Counter<T: Hash + Eq, N = usize> {
     map: CounterMap<T, N>,
     // necessary for `Index::index` since we cannot declare generic `static` variables.
     zero: N,
+}
+
+impl<T, N> Counter<T, N>
+where
+    T: Hash + Eq,
+    N: SaturatingAdd + Zero + One,
+{
+    pub fn saturating_update<I>(&mut self, iterable: I)
+        where
+        I: IntoIterator<Item = T>,
+    {
+        for item in iterable {
+            let entry = self.map.entry(item).or_insert_with(N::zero);
+            *entry = entry.saturating_add(&N::one());
+        }
+    }
 }
 
 impl<T, N> Counter<T, N>
@@ -1280,6 +1298,32 @@ where
         for (item, item_count) in iter {
             let entry = self.map.entry(item).or_insert_with(N::zero);
             *entry += item_count;
+        }
+    }
+}
+
+impl<'a, T: 'a, N: 'a> Counter<T, N>
+where
+    T: Hash + Eq + Clone,
+    N: SaturatingAdd + Zero + Clone,
+{
+    /// Extend a counter with `(item, count)` tuples.
+    ///
+    /// You can extend a `Counter` with another `Counter`:
+    /// ```rust
+    /// # use counter::Counter;
+    /// # use fnv::FnvHashMap;
+    /// let mut counter = "abbccc".chars().collect::<Counter<_>>();
+    /// let another = "bccddd".chars().collect::<Counter<_>>();
+    /// counter.extend_saturating(&another);
+    /// let expect = [('a', 1), ('b', 3), ('c', 5), ('d', 3)].iter()
+    ///     .cloned().collect::<FnvHashMap<_, _>>();
+    /// assert_eq!(counter.into_map(), expect);
+    /// ```
+    pub fn extend_saturating<I: IntoIterator<Item = (&'a T, &'a N)>>(&mut self, iter: I) {
+        for (item, item_count) in iter {
+            let entry = self.map.entry(item.clone()).or_insert_with(N::zero);
+            *entry = entry.saturating_add(&item_count);
         }
     }
 }
